@@ -41,10 +41,10 @@ total2PacksSold = 0
 totalAmountPaid = 0
 TwoPacksSold = 0
 
+
 for order in data['orders']:
     skuValue = order['items'][0]['sku']
     sku = 0
-    print(skuValue)
     # Handles RED/02 (M1010-2) 
     if '(' in skuValue:
         sku = skuValue.split('(')[1]
@@ -61,14 +61,12 @@ for order in data['orders']:
         sku = skuValue.split('-')[1]
         sku = sku.split('/')[0]
         sku = int(sku)
-        print(sku)
 
     # Handles M1000
     elif '-' not in skuValue:
         sku = 0
     else:
         sku = int(skuValue.split('-')[1])
-       
     # Dividing the sky after the - for 2, 4, 6, 10 packs by 2 then multiplying by quantity to get total amount of 2 packs sold. 
     quantity = int(order['items'][0]['quantity'])
     if sku > 1 : 
@@ -90,7 +88,6 @@ for order in data['orders']:
     total2PacksSold += TwoPacksSold
     totalAmountPaid +=  row['amountPaid']
     results.append(row)
-    print(sku)
     
 row = {
         'orderId': '',
@@ -106,8 +103,35 @@ row = {
     }
 results.append(row)    
 df = pd.DataFrame(results)
-df = df.reset_index(drop=True)
+
+
+
+
+BLK02 = df.loc[df['sku'].str.contains('M1030') | df['sku'].str.contains('BLK')]
+sumBLK = BLK02['TwoPacksSold'].sum()
+GRY02 = df.loc[df['sku'].str.contains('M1040') | df['sku'].str.contains('GRY')]
+sumGRY = GRY02['TwoPacksSold'].sum()
+PNK02 = df.loc[df['sku'].str.contains('M1070') | df['sku'].str.contains('PNK')]
+sumPNK = PNK02['TwoPacksSold'].sum()
+RED02 = df.loc[df['sku'].str.contains('M1010') | df['sku'].str.contains('RED')]
+sumRED = RED02['TwoPacksSold'].sum()
+ROS02 = df.loc[df['sku'].str.contains('M1080') | df['sku'].str.contains('ROS')]
+sumROS = ROS02['TwoPacksSold'].sum()
+
+colorsSold = {
+        'BLK/02 Sold' : sumBLK,
+        'GRY/02 Sold' : sumGRY,
+        'PNK/02 Sold' : sumPNK,
+        'RED/02 Sold' : sumRED,
+        'ROS/02 Sold' : sumROS,
+        'Total Two Packs Sold': total2PacksSold,
+        'Total Amount Paid': totalAmountPaid
+}
+finalResults = [colorsSold]
+
+df2 = pd.DataFrame(finalResults)
+
 
 curr_date = datetime.today()
 curr_date = curr_date.strftime('%m_%d_%y')
-df.to_csv('{}_Updated_Inventory.csv'.format(curr_date))
+df2.to_csv('{}_Final_Inventory_as_of_AUG14.csv'.format(curr_date))
