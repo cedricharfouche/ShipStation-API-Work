@@ -20,7 +20,7 @@ with open('credentials.txt','r') as f:
                 AUTH_ENCODED = line.split('=')[1] + "="
 
 # Endpoint URL
-url = "https://ssapi.shipstation.com/orders?orderDateStart=2021-07-14"
+url = "https://ssapi.shipstation.com/orders?orderDateStart=2021-08-14"
 headers = {
     "Authorization": "Basic " + AUTH_ENCODED
 }
@@ -39,23 +39,38 @@ results = []
 
 total2PacksSold = 0
 totalAmountPaid = 0
+TwoPacksSold = 0
 
 for order in data['orders']:
-    
-    sku = order['items'][0]['sku']
-    # Changed this to account for skew codes without - 
-    if sku.find('-') == 1 : 
+    skuValue = order['items'][0]['sku']
+    sku = 0
+    print(skuValue)
+    # Handles RED/02 (M1010-2) 
+    if '(' in skuValue:
+        sku = skuValue.split('(')[1]
         sku = sku.split('-')[1]
-    else : 
-        sku = sku
+        sku = sku.split(')')[0]
+        sku = int(sku)
 
-    sku = sku.split('/')[0]
-    #if  sku.is_integer() :
+    # Handles RED/02+CFA10
+    elif '+' in skuValue and '/' in skuValue:
+        sku = 2
+    
+    # Handles M1030-02/BLK
+    elif  '/' in skuValue:
+        sku = skuValue.split('-')[1]
+        sku = sku.split('/')[0]
+        sku = int(sku)
+        print(sku)
+
+    # Handles M1000
+    elif '-' not in skuValue:
+        sku = 0
+    else:
+        sku = int(skuValue.split('-')[1])
        
-    sku = int(float(sku))
-    TwoPacksSold = 0
-    quantity = int(order['items'][0]['quantity'])
     # Dividing the sky after the - for 2, 4, 6, 10 packs by 2 then multiplying by quantity to get total amount of 2 packs sold. 
+    quantity = int(order['items'][0]['quantity'])
     if sku > 1 : 
         TwoPacksSold = (sku / 2) * quantity
     else :
@@ -65,15 +80,15 @@ for order in data['orders']:
         'orderDate' : order['orderDate'],
         'orderStatus' : order['orderStatus'],
         'name' : order['items'][0]['name'],
-        'sku' : order['items'][0]['sku'],
+        'sku' : skuValue,
         'quantity' : order['items'][0]['quantity'],
-        'amountPaid' : order['amountPaid'],
+        'amountPaid' :  order['amountPaid'],
         'TwoPacksSold' : TwoPacksSold,
         'totalAmountPaid' : '',
         'total2PacksSold' : ''
     }
     total2PacksSold += TwoPacksSold
-    totalAmountPaid += row['amountPaid']
+    totalAmountPaid +=  row['amountPaid']
     results.append(row)
     print(sku)
     
